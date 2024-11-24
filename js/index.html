@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лінійна Апроксимація - Метод Найменших Квадратів</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, button {
+            margin: 10px 5px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #chart-container {
+            margin: 30px auto;
+            width: 100%;
+            max-width: 800px;
+        }
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Лінійна Апроксимація</h1>
+        <h3>Метод Найменших Квадратів</h3>
+
+        <p>Введіть значення <b>x</b> та <b>y</b> через кому для побудови графіка:</p>
+        <label for="x-values">x (незалежна змінна):</label>
+        <input type="text" id="x-values" placeholder="Наприклад: 1, 2, 3, 4, 5"><br>
+        <label for="y-values">y (залежна змінна):</label>
+        <input type="text" id="y-values" placeholder="Наприклад: 2, 3, 5, 7, 11"><br>
+        <button onclick="addGraph()">Додати графік</button>
+        <button onclick="clearGraphs()">Очистити графіки</button>
+    </div>
+
+    <div id="chart-container">
+        <canvas id="approximationChart"></canvas>
+    </div>
+
+    <script>
+        let chart;
+        const color = "blue";
+
+        function calculateCoefficients(xValues, yValues) {
+            const n = xValues.length;
+            const sumX = xValues.reduce((acc, val) => acc + val, 0);
+            const sumY = yValues.reduce((acc, val) => acc + val, 0);
+            const sumXX = xValues.reduce((acc, val) => acc + val ** 2, 0);
+            const sumXY = xValues.reduce((acc, val, idx) => acc + val * yValues[idx], 0);
+
+            const a1 = (n * sumXY - sumX * sumY) / (n * sumXX - sumX ** 2);
+            const a0 = (sumY - a1 * sumX) / n;
+
+            return { a0, a1 };
+        }
+
+        function addGraph() {
+            const xInput = document.getElementById('x-values').value.split(',').map(Number);
+            const yInput = document.getElementById('y-values').value.split(',').map(Number);
+
+            if (xInput.length !== yInput.length || xInput.length === 0) {
+                alert("Помилка: Введіть однакову кількість значень x та y!");
+                return;
+            }
+
+            const { a0, a1 } = calculateCoefficients(xInput, yInput);
+            const yPred = xInput.map(x => a0 + a1 * x);
+
+            if (!chart) {
+                const ctx = document.getElementById('approximationChart').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'x (незалежна змінна)',
+                                },
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'y (залежна змінна)',
+                                },
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                        },
+                    },
+                });
+            }
+
+            chart.data.datasets.push({
+                label: `Дані (${chart.data.datasets.length / 2 + 1})`,
+                data: xInput.map((x, idx) => ({ x: x, y: yInput[idx] })),
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 1,
+                pointRadius: 5,
+            });
+
+            chart.data.datasets.push({
+                label: `Лінія (${chart.data.datasets.length / 2 + 1}): y = ${a0.toFixed(2)} + ${a1.toFixed(2)}x`,
+                data: xInput.map((x, idx) => ({ x: x, y: yPred[idx] })),
+                type: 'line',
+                borderColor: color,
+                borderWidth: 2,
+                fill: false,
+            });
+
+            chart.update();
+        }
+
+        function clearGraphs() {
+            if (chart) {
+                chart.data.datasets = [];
+                chart.update();
+            }
+        }
+    </script>
+</body>
+</html>
